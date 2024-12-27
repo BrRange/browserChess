@@ -1,0 +1,61 @@
+html{
+    height: 100%;
+    background: linear-gradient(135deg, #003, #000);
+}
+#turnBoard{
+    position: absolute;
+    background-color: #ffffff80;
+    height: 20vh;
+    width: 50vh;
+    top: 50%;
+    left: 100%;
+    transform: translate(-100%, -50%);
+    text-align: center;
+    display: block;
+    opacity: 0;
+    transition: 1s;
+}
+#turnBoard > h1{
+    font-family: fantasy;
+}
+#turnBoard > span{
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+}
+#gameBoard{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-spacing: 0;
+}
+#gameBoard tr > *{
+    width: 64px;
+    height: 64px;
+    display: inline-block;
+    border: 1px #000 solid;
+    margin: 0;
+    padding: 0;
+}
+.verticalLabel{
+    width: 64px;
+    height: 64px;
+    font-size: 48px;
+    align-content: center;
+    color: #fff2;
+    font-family: monospace;
+    transform: translateX(-150%);
+}
+.horizontalLabel{
+    width: 64px;
+    height: 64px;
+    font-size: 48px;
+    align-content: center;
+    color: #fff2;
+    font-family: monospace;
+    transform: translate(-50%, -100%);
+}
+#gameBoard > tr{
+    margin: 0;
+    padding: 0;
+}
