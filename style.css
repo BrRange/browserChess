@@ -44,7 +44,7 @@ html{
     align-content: center;
     color: #fff2;
     font-family: monospace;
-    transform: translateX(-150%);
+    transform: translateX(-200%);
 }
 .horizontalLabel{
     width: 64px;
@@ -53,7 +53,7 @@ html{
     align-content: center;
     color: #fff2;
     font-family: monospace;
-    transform: translate(-50%, -100%);
+    transform: translate(-100%, -100%);
 }
 #gameBoard > tr{
     margin: 0;
