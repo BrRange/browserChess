@@ -12,7 +12,7 @@ html{
     transform: translate(-100%, -50%);
     text-align: center;
     display: block;
-    opacity: 0;
+    opacity: 1;
     transition: 1s;
 }
 #turnBoard > h1{
