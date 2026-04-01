@@ -1,6 +1,6 @@
 const http = require("http");
 const fs = require("fs");
-const port = 3000;
+const port = 80;
 const piece = require("./piece.ts");
 
 class GameState {
@@ -13,17 +13,16 @@ class GameState {
   }
   init(){
     this.board = new piece.Board(10, 8);
-    for (let i = 0; i < this.board.w; i++) {
-      if (i == 3 || i == 6) {
-        this.board.row[6][i].piece = new piece.Soldier(i, 6, true);
-        this.board.row[1][i].piece = new piece.Soldier(i, 1, false);
-      } else if (i == 1 || i == 8) {
-        this.board.row[6][i].piece = new piece.Bomber(i, 6, true);
-        this.board.row[1][i].piece = new piece.Bomber(i, 1, false);
-      } else {
-        this.board.row[6][i].piece = new piece.Pawn(i, 6, true);
-        this.board.row[1][i].piece = new piece.Pawn(i, 1, false);
-      }
+    for (let i = 0; i < this.board.w; i++) 
+    if (i == 3 || i == 6) {
+      this.board.row[6][i].piece = new piece.Soldier(i, 6, true);
+      this.board.row[1][i].piece = new piece.Soldier(i, 1, false);
+    } else if (i == 1 || i == 8) {
+      this.board.row[6][i].piece = new piece.Bomber(i, 6, true);
+      this.board.row[1][i].piece = new piece.Bomber(i, 1, false);
+    } else {
+      this.board.row[6][i].piece = new piece.Pawn(i, 6, true);
+      this.board.row[1][i].piece = new piece.Pawn(i, 1, false);
     }
     for (let i = 0; i < 2; i++) {
       this.board.row[7][3 + i * 3].piece = new piece.Bishop(3 + i * 3, 7, true);
@@ -54,34 +53,33 @@ gameState.init();
 const server = http.createServer((req, res) => {
   switch (req.url) {
     case "/":
-      res.writeHead(200, { "Content-Type": "text/html" });
       fs.readFile('./index.html', (error, data) => {
         if (error) {
           res.writeHead(400);
           res.write("HTML file not found");
         } else {
+          res.writeHead(200, { "Content-Type": "text/html" });
           res.end(data);
         }
       }); return;
 
     case "/style.css":
-      res.writeHead(200, { "Content-Type": "text/css" });
       fs.readFile('./style.css', (error, data) => {
         if (error) {
           res.writeHead(400);
           res.write("CSS file not found");
         } else {
+          res.writeHead(200, { "Content-Type": "text/css" });
           res.end(data);
         }
       }); return;
     case "/client.js":
-
-      res.writeHead(200, { "Content-Type": "application/javascript" });
       fs.readFile('./client.js', (error, data) => {
         if (error) {
           res.writeHead(400);
           res.write("JavaScript file not found");
         } else {
+          res.writeHead(200, { "Content-Type": "application/javascript" });
           res.end(data);
         }
       }); return;
@@ -150,15 +148,17 @@ const server = http.createServer((req, res) => {
           }));
           return;
         }
-        boardRef.selected = boardRef.row[iy][ix].piece;
+        const selected = boardRef.row[iy][ix].piece;
+        const iname = selected.name;
+        const iteam = selected.team;
         const target = boardRef.row[ty][tx];
         let tpiece = null;
-        boardRef.selected.highlight(boardRef);
+        selected.highlight(boardRef);
         if(target.color == piece.attackColor){
           tpiece = target.piece;
-          boardRef.selected.attackEffect(boardRef, target.piece);
+          selected.attackEffect(boardRef, target.piece);
         } else if(target.color == piece.moveColor){
-          boardRef.selected.relocate(boardRef, tx, ty);
+          selected.relocate(boardRef, tx, ty);
         } else {
           res.end(JSON.stringify({
             val: false,
@@ -169,8 +169,8 @@ const server = http.createServer((req, res) => {
         gameState.teamTurn = !gameState.teamTurn;
         gameState.board.turnCount += 1;
         gameState.lastMove = {
-          iniName: target.piece.name,
-          iniTeam: target.piece.team,
+          iniName: iname,
+          iniTeam: iteam,
           iniX: ix,
           iniY: iy,
           targName: tpiece ? tpiece.name : "",

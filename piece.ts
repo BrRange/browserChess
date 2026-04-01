@@ -19,7 +19,6 @@ export class Board{
   w: number;
   h: number;
   row: Tile[][];
-  selected: Piece | null = null;
   turnCount: number = 0;
   constructor(w: number, h: number){
     this.w = w;
@@ -47,6 +46,45 @@ export class Pattern {
   }
 };
 
+export class Path {
+  dir: Position;
+  steps: number;
+  constructor(dir: Position, steps: number){
+    this.dir = dir;
+    this.steps = steps;
+  }
+};
+
+function getPathing(source: Piece, target: Piece): Path{
+  let dx = target.pos.x - source.pos.x;
+  let dy = target.pos.y - source.pos.y;
+  console.log(dx, dy);
+  let dir: Position | null = null;
+  let len: number = 0;
+  for(let d of source.attack.dir){
+    if(d.x && d.y)
+    if(dx / d.x == dy / d.y){
+      dir = d;
+      len = dx / d.x;
+      break;
+    }
+    if(d.x && !dy)
+    if(dx / d.x > 0){
+      dir = d;
+      len = dx / d.x;
+      break;
+    }
+    if(d.y && !dx)
+    if(dy / d.y > 0){
+      dir = d;
+      len = dy / d.y
+      break;
+    }
+  }
+  if(dir == null) return new Path(new Position(0, 0), 0);
+  return new Path(dir, len);
+}
+
 class Piece {
   name!: string;
   pos: Position;
@@ -65,7 +103,9 @@ class Piece {
     this.alive = true;
   }
   specialMove(board: Board) { }
-  endOfTurn(board: Board) { }
+  endOfTurn(board: Board) {
+    if(!this.alive) this.die(board, this);
+  }
   highlight(board: Board) {
     this.movement.dir.forEach((p: Position) => {
       for (let i = 1; i != this.movement.len + 1; i++) {
@@ -112,6 +152,11 @@ class Piece {
     target.die(board, this);
     if (board.row[target.pos.y][target.pos.x].piece == null)
       this.relocate(board, target.pos.x, target.pos.y);
+    else{
+      const p = getPathing(this, target);
+      p.steps -= 1;
+      this.relocate(board, this.pos.x + p.dir.x * p.steps, this.pos.y + p.dir.y * p.steps);
+    }
   }
 };
 
@@ -232,9 +277,6 @@ export class Bomb extends Piece {
     this.movement = new Pattern([], 0);
     this.attack = new Pattern([{ x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 1, y: -1 }, { x: -1, y: 1 }, { x: -1, y: -1 }], 1);
     this.fuseTimer = board.turnCount;
-  }
-  specialMove(board: Board){
-    if(board.selected == this) board.selected = null;
   }
   die(board: Board, source: Piece) {
     this.alive = false;
