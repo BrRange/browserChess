@@ -19,9 +19,12 @@ typedef struct StringView{
 
 String string_new(const StringView view);
 
+
 StringView string_newView(const char *txt, u32 len);
 
-StringView string_view(String *str);
+StringView string_view(const String *str);
+
+void string_reserve(String *str, u32 len);
 
 void string_free(String *str);
 

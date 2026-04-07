@@ -58,7 +58,6 @@ export class Path {
 function getPathing(source: Piece, target: Piece): Path{
   let dx = target.pos.x - source.pos.x;
   let dy = target.pos.y - source.pos.y;
-  console.log(dx, dy);
   let dir: Position | null = null;
   let len: number = 0;
   for(let d of source.attack.dir){
@@ -252,7 +251,8 @@ export class Spear extends Piece {
     this.attack = new Pattern([{ x: 0, y: team ? -1 : 1 }], 2);
   }
   moveEffect(board: Board) {
-    if (this.pos.y == (this.team ? 0 : board.h - 1)) board.row[this.pos.y][this.pos.x].piece = new Rook(this.pos.x, this.pos.y, this.team);
+    if (this.pos.y == (this.team ? 0 : board.h - 1))
+      board.row[this.pos.y][this.pos.x].piece = new Rook(this.pos.x, this.pos.y, this.team);
   }
   attackEffect(board: Board, target: Piece) {
     target.die(board, this);

@@ -8,10 +8,7 @@ void *(*stringRealloc)(void *mem, usz bytes) = realloc;
 String string_new(const StringView view){
   String str = {0};
   str.len = view.len;
-  u32 cap = 2;
-  while(cap < str.len) cap += (cap >> 1) + ((cap >> 1) & 1);
-  str.cap = cap;
-  str.data = stringRealloc(str.data, cap);
+  string_reserve(&str, view.len);
   memcpy(str.data, view.data, view.len);
   return str;
 }
@@ -24,12 +21,22 @@ StringView string_newView(const char *txt, u32 len){
   return view;
 }
 
-StringView string_view(String *str){
+StringView string_view(const String *str){
   StringView view = {
     .data = str->data,
     .len = str->len
   };
   return view;
+}
+
+void string_reserve(String *str, u32 len){
+  u32 cap = str->cap;
+  cap += 2 * !cap;
+  while(cap < len) cap += (cap >> 1) + ((cap >> 1) & 1);
+  if(cap > str->cap){
+    str->cap = cap;
+    str->data = stringRealloc(str->data, cap);
+  }
 }
 
 void string_free(String *str){
@@ -47,25 +54,13 @@ void string_destroy(String *str){
 
 void string_set(String *str, const StringView view){
   str->len = view.len;
-  u32 cap = str->cap;
-  cap += 2 * !cap;
-  while(cap < str->len) cap += (cap >> 1) + ((cap >> 1) & 1);
-  if(cap > str->cap){
-    str->cap = cap;
-    str->data = stringRealloc(str->data, cap);
-  }
+  string_reserve(str, view.len);
   memcpy(str->data, view.data, view.len);
 }
 
 void string_append(String *str, const StringView view){
   u32 newLen = str->len + view.len;
-  u32 cap = str->cap;
-  cap += 2 * !cap;
-  while(cap < newLen) cap += (cap >> 1) + ((cap >> 1) & 1);
-  if(cap > str->cap){
-    str->cap = cap;
-    str->data = stringRealloc(str->data, cap);
-  }
+  string_reserve(str, newLen);
   memcpy(str->data + str->len, view.data, view.len);
   str->len = newLen;
 }
