@@ -20,7 +20,7 @@ void piece_free(Piece *piece){
   free(piece);
 }
 
-void piece_specialMove(Piece *this, Board *board){
+void piece_specialMove(const Piece *this, Board *board){
   (void)this;
   (void)board;
   return;
@@ -56,6 +56,79 @@ void piece_attackEffect(Piece *this, Board *board, Piece *target){
   }
 }
 
+Path piece_pathing(const Piece *source, const Piece *target){
+  i32 dx = target->pos.x - source->pos.x;
+  i32 dy = target->pos.y - source->pos.y;
+  const Position *dir;
+  i32 len = 0;
+  for(usz i = 0; i < source->attack.len; ++i){
+    const Position d = source->attack.path[i].dir;
+    if(d.x && d.y)
+    if(dx / d.x == dy / d.y){
+      dir = &d;
+      len = dx / d.x;
+      break;
+    }
+    if(d.x && !dy)
+    if(dx / d.x > 0){
+      dir = &d;
+      len = dx / d.x;
+      break;
+    }
+    if(d.y && !dx)
+    if(dy / d.y > 0){
+      dir = &d;
+      len = dy / d.y;
+      break;
+    }
+  }
+  if(!dir) return (Path){.dir = {0}, .steps = 0};
+  return (Path){.dir = *dir, .steps = len};
+}
+
+void piece_highlight(const Piece *this, Board *board){
+  Tile (*r2d)[board->w] = (void*)board->row;
+  for(usz p = 0; p < this->move.len; ++p){
+    const Path path = this->move.path[p];
+    for(i32 i = 1; i != path.steps + 1; ++i){
+      i32 deltax = this->pos.x + path.dir.x * i;
+      i32 deltay = this->pos.y + path.dir.y * i;
+      if(deltax >= 0 && deltax <= board->w - 1 && deltay >= 0 && deltay <= board->h - 1){
+        if(r2d[deltay][deltax].piece) break;
+        r2d[deltay][deltax].stat = TileStat_Move;
+      } else break;
+    }
+  }
+  for(usz p = 0; p < this->attack.len; ++p){
+    const Path path = this->attack.path[p];
+    for(i32 i = 1; i != path.steps + 1; ++i){
+      i32 deltax = this->pos.x + path.dir.x * i;
+      i32 deltay = this->pos.y + path.dir.y * i;
+      if(deltax >= 0 && deltax <= board->w - 1 && deltay >= 0 && deltay <= board->h - 1){
+        if(r2d[deltay][deltax].piece){
+          if(r2d[deltay][deltax].piece->team == this->team) break;
+          else{
+            r2d[deltay][deltax].stat = TileStat_Attack;
+            break;
+          }
+        }
+      } else break;
+    }
+  }
+  this->virtual->specialMove(this, board);
+}
+
+void piece_relocate(Piece *this, Board *board, i32 x, i32 y){
+  Tile (*r2d)[board->w] = (void*)board->row;
+  if(!this->alive) return;
+  r2d[this->pos.y][this->pos.x].piece = NULL;
+  r2d[y][x].piece = this;
+  this->pos.x = x;
+  this->pos.y = y;
+  this->virtual->moveEffect(this, board);
+  this->moved = true;
+}
+
 Board board_new(i32 w, i32 h){
   Board board = {
     .w = w,
@@ -64,6 +137,42 @@ Board board_new(i32 w, i32 h){
     .row = malloc(sizeof(Tile) * w * h)
   };
   for(i32 i = 0; i < w * h; ++i) board.row[i] = (Tile){0};
+  return board;
+}
+
+void board_setup(Board *board){
+  Tile (*r2d)[board->w] = (void*)board->row;
+  for(i32 i = 0; i < board->w; ++i)
+  if(i == 3 || i == 6){
+    r2d[6][i].piece = soldier_new(i, 6, Team_Blue);
+    r2d[1][i].piece = soldier_new(i, 1, Team_Red);
+  } else if(i == 1 || i == 8){
+    r2d[6][i].piece = bomber_new(i, 6, Team_Blue);
+    r2d[1][i].piece = bomber_new(i, 1, Team_Red);
+  } else{
+    r2d[6][i].piece = pawn_new(i, 6, Team_Blue);
+    r2d[1][i].piece = pawn_new(i, 1, Team_Red);
+  }
+  for(i32 i = 0; i < 2; ++i){
+    r2d[7][3 + i * 3].piece = bishop_new(3 + i * 3, 7, Team_Blue);
+    r2d[0][3 + i * 3].piece = bishop_new(3 + i * 3, 0, Team_Red);
+  }
+  for(i32 i = 0; i < 2; ++i){
+    r2d[7][2 + i * 5].piece = knight_new(2 + i * 5, 7, Team_Blue);
+    r2d[0][2 + i * 5].piece = knight_new(2 + i * 5, 0, Team_Red);
+  }
+  for(i32 i = 0; i < 2; ++i){
+    r2d[7][i * 9].piece = rook_new(i * 9, 7, Team_Blue);
+    r2d[0][i * 9].piece = rook_new(i * 9, 0, Team_Red);
+  }
+  for(i32 i = 0; i < 2; ++i){
+    r2d[7][1 + i * 7].piece = spear_new(1 + i * 7, 7, Team_Blue);
+    r2d[0][1 + i * 7].piece = spear_new(1 + i * 7, 0, Team_Red);
+  }
+  r2d[7][5].piece = king_new(5, 7, Team_Blue);
+  r2d[0][5].piece = king_new(5, 0, Team_Red);
+  r2d[7][4].piece = queen_new(4, 7, Team_Blue);
+  r2d[0][4].piece = queen_new(4, 0, Team_Red);
 }
 
 void board_clear(Board *board){
@@ -71,16 +180,23 @@ void board_clear(Board *board){
     board->row[i].stat = TileStat_Clear;
 }
 
+void board_free(Board *board){
+  for(i64 i = 0; i < (i64)board->w * board->h; ++i)
+  if(board->row[i].piece) piece_free(board->row[i].piece);
+  free(board->row);
+}
+
 typedef struct PawnShared{
   i32 enPassant;
   i32 moveLen;
 } PawnShared;
 
-void pawn_specialMove(Piece *this, Board *board){
-  Tile (*r2d)[board->w] = board->row;
+void pawn_specialMove(const Piece *this, Board *board){
+  Tile (*r2d)[board->w] = (void*)board->row;
   Tile *tileCheck;
   if(this->pos.x - 1 >= 0){
     tileCheck = &r2d[this->pos.y][this->pos.x - 1];
+    if(tileCheck->piece)
     if(tileCheck->piece->type == Pawn)
     if(
       board->turnCount - ((PawnShared*)tileCheck->piece->shared)->enPassant == 1
@@ -90,6 +206,7 @@ void pawn_specialMove(Piece *this, Board *board){
   }
   if(this->pos.x + 1 <= board->w - 1){
     tileCheck = &r2d[this->pos.y][this->pos.x + 1];
+    if(tileCheck->piece)
     if(tileCheck->piece->type == Pawn)
     if(
       board->turnCount - ((PawnShared*)tileCheck->piece->shared)->enPassant == 1
@@ -105,14 +222,14 @@ void pawn_moveEffect(Piece *this, Board *board){
   this->move.path[0].steps = 1;
   share->moveLen = 1;
   if(this->pos.y == (this->team ? 0 : board->h - 1)){
-    Tile (*r2d)[board->w] = board->row;
+    Tile (*r2d)[board->w] = (void*)board->row;
     r2d[this->pos.y][this->pos.x].piece = knight_new(this->pos.x, this->pos.y, this->team);
     piece_free(this);
   }
 }
 
 void pawn_attackEffect(Piece *this, Board *board, Piece *target){
-  Tile (*r2d)[board->w] = board->row;
+  Tile (*r2d)[board->w] = (void*)board->row;
   if(target->type == Pawn)
   if(
     board->turnCount - ((PawnShared*)target->shared)->enPassant == 1
@@ -278,7 +395,7 @@ const PieceVT queenVT = {
   .attackEffect = piece_attackEffect
 };
 
-Piece *new_queen(i32 x, i32 y, Team team){
+Piece *queen_new(i32 x, i32 y, Team team){
   Piece *queen = piece_new(x, y, team);
 
   queen->virtual = &queenVT;
@@ -301,7 +418,7 @@ Piece *new_queen(i32 x, i32 y, Team team){
 }
 
 void spear_moveEffect(Piece *this, Board *board){
-  Tile (*r2d)[board->w] = board->row;
+  Tile (*r2d)[board->w] = (void*)board->row;
   if(this->pos.y == (this->team ? 0 : board->h - 1)){
     r2d[this->pos.y][this->pos.x].piece = rook_new(this->pos.x, this->pos.y, this->team);
     piece_free(this);
@@ -340,7 +457,7 @@ Piece *spear_new(i32 x, i32 y, Team team){
 }
 
 void soldier_moveEffect(Piece *this, Board *board){
-  Tile (*r2d)[board->w] = board->row;
+  Tile (*r2d)[board->w] = (void*)board->row;
   if(this->pos.y == (this->team ? 0 : board->h - 1)){
     r2d[this->pos.y][this->pos.x].piece = queen_new(this->pos.x, this->pos.y, this->team); 
     piece_free(this);
@@ -380,11 +497,11 @@ typedef struct BombShared{
 } BombShared;
 
 void bomb_die(Piece *this, Board *board, Piece *source){
-  Tile (*r2d)[board->w] = board->row;
+  Tile (*r2d)[board->w] = (void*)board->row;
   r2d[this->pos.y][this->pos.x].piece = NULL;
   for(usz pathI = 0; pathI < this->attack.len; ++pathI){
     const Path path = this->attack.path[pathI];
-    for(usz i = 1; path.steps < 0 ? true : i <= path.steps; i++){
+    for(usz i = 1; i != path.steps + 1; ++i){
       i32 deltax = this->pos.x + path.dir.x * i;
       i32 deltay = this->pos.y + path.dir.y * i;
       if(deltax >= 0 && deltax <= board->w - 1 && deltay >= 0 && deltay <= board->h - 1){
@@ -440,13 +557,13 @@ Piece *bomb_new(i32 x, i32 y, Team team, Board *board){
   return bomb;
 }
 
-void bomber_specialMove(Piece *this, Board *board){
-  Tile (*r2d)[board->w] = board->row;
+void bomber_specialMove(const Piece *this, Board *board){
+  Tile (*r2d)[board->w] = (void*)board->row;
   r2d[this->pos.y][this->pos.x].stat = TileStat_Attack;
 }
 
 void bomber_die(Piece *this, Board *board, Piece *source){
-  Tile (*r2d)[board->w] = board->row;
+  Tile (*r2d)[board->w] = (void*)board->row;
   r2d[this->pos.y][this->pos.x].piece = bomb_new(this->pos.x, this->pos.y, this->team, board);
   piece_free(this);
 }
@@ -472,6 +589,8 @@ Piece *bomber_new(i32 x, i32 y, Team team){
   bomber->move.path[2] = (Path){.dir = {.x = -1, .y = 1}, .steps = 1};
   bomber->move.path[3] = (Path){.dir = {.x = -1, .y = -1}, .steps = 1};
   bomber->move.len = 4;
+  bomber->attack.path = bomber->move.path;
+  bomber->attack.len = 0;
 
   return bomber;
 }

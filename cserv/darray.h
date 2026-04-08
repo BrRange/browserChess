@@ -124,6 +124,7 @@ void darray_popMany(void *darrayAny, u32 index, u32 amount, u32 typeSize);
 void darray_destroy(void *darrayAny);
 
 #define darrayIterate(_da)\
+  if(_da.len)\
   for(typeof((_da).data)_ref = NULL; !_ref; _ref = (void*)1)\
   for(typeof(*(_da).data)_el; !_ref; _ref = (void*)1)\
   for(u32 _i = 0; (_ref = (_da).data + _i, _el = *_ref, _i < (_da).len); ++_i)

@@ -62,7 +62,7 @@ struct Path{
 
 struct PieceVT{
   void
-  (*specialMove)(Piece *this, Board *board),
+  (*specialMove)(const Piece *this, Board *board),
   (*endOfTurn)(Piece *this, Board *board),
   (*moveEffect)(Piece *this, Board *board),
   (*die)(Piece *this, Board *board, Piece *source),
@@ -94,11 +94,13 @@ Piece
 *bomb_new(i32 x, i32 y, Team team, Board *board),
 *bomber_new(i32 x, i32 y, Team team);
 
-Path piece_pathing(Piece *this, Piece *target);
-void piece_highlight(Piece *this, Board *board);
+Path piece_pathing(const Piece *this, const Piece *target);
+void piece_highlight(const Piece *this, Board *board);
 void piece_relocate(Piece *this, Board *board, i32 x, i32 y);
 
 Board board_new(i32 w, i32 h);
+void board_setup(Board *board);
 void board_clear(Board *board);
+void board_free(Board *board);
 
 #endif
